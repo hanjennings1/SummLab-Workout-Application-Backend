@@ -1,7 +1,11 @@
-from flask import Flask, make_response
+from flask import Flask, make_response, request
 from flask_migrate import Migrate
+from marshmallow import ValidationError
 
-from models import *
+from models import db, Exercise, Workout, WorkoutExercise
+from schemas import ExerciseSchema, WorkoutSchema, WorkoutExerciseSchema
+from sqlalchemy.exc import IntegrityError
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
@@ -12,48 +16,89 @@ migrate = Migrate(app, db)
 db.init_app(app)
 
 
+# Schema instances: single-record views include nested data; lists stay concise
+workout_schema = WorkoutSchema()
+workouts_schema = WorkoutSchema(many=True, exclude=('workout_exercises',))
+exercise_schema = ExerciseSchema()
+exercises_schema = ExerciseSchema(many=True, exclude=('workouts',))
+workout_exercise_schema = WorkoutExerciseSchema()
+
+
 # ---------- WORKOUT ROUTES ----------
 
 @app.route('/workouts', methods=['GET'])
 def get_workouts():
-    return make_response({'message': 'List all workouts'}, 200)
-
+    workouts = Workout.query.all()
+    return make_response(workouts_schema.dump(workouts), 200)
 
 @app.route('/workouts/<int:id>', methods=['GET'])
 def get_workout(id):
-    return make_response({'message': f'Show workout {id} with its exercises'}, 200)
-
+    workout = db.session.get(Workout, id)
+    if not workout:
+        return make_response({'error': 'Workout not found'}, 404)
+    return make_response(workout_schema.dump(workout), 200)
 
 @app.route('/workouts', methods=['POST'])
 def create_workout():
-    return make_response({'message': 'Create a workout'}, 200)
-
+    try:
+        data = workout_schema.load(request.get_json())
+        workout = Workout(**data)
+        db.session.add(workout)
+        db.session.commit()
+    except ValidationError as e:     # schema validations (Marshmallow)
+        return make_response({'error': e.messages}, 400)
+    except ValueError as e:          # model validations (@validates)
+        return make_response({'error': str(e)}, 400)
+    return make_response(workout_schema.dump(workout), 201)
 
 @app.route('/workouts/<int:id>', methods=['DELETE'])
 def delete_workout(id):
-    return make_response({'message': f'Delete workout {id}'}, 200)
+    workout = db.session.get(Workout, id)
+    if not workout:
+        return make_response({'error': 'Workout not found'}, 404)
+    db.session.delete(workout)  # cascade also deletes its WorkoutExercises
+    db.session.commit()
+    return make_response('', 204)
 
 
 # ---------- EXERCISE ROUTES ----------
 
 @app.route('/exercises', methods=['GET'])
 def get_exercises():
-    return make_response({'message': 'List all exercises'}, 200)
-
+    exercises = Exercise.query.all()
+    return make_response(exercises_schema.dump(exercises), 200)
 
 @app.route('/exercises/<int:id>', methods=['GET'])
 def get_exercise(id):
-    return make_response({'message': f'Show exercise {id} with its workouts'}, 200)
-
+    exercise = db.session.get(Exercise, id)
+    if not exercise:
+        return make_response({'error': 'Exercise not found'}, 404)
+    return make_response(exercise_schema.dump(exercise), 200)
 
 @app.route('/exercises', methods=['POST'])
 def create_exercise():
-    return make_response({'message': 'Create an exercise'}, 200)
-
+    try:
+        data = exercise_schema.load(request.get_json())
+        exercise = Exercise(**data)
+        db.session.add(exercise)
+        db.session.commit()
+    except ValidationError as e:     # schema validations (Marshmallow)
+        return make_response({'error': e.messages}, 400)
+    except ValueError as e:          # model validations (@validates)
+        return make_response({'error': str(e)}, 400)
+    except IntegrityError:           # table constraints (duplicate name)
+        db.session.rollback()
+        return make_response({'error': 'An exercise with that name already exists.'}, 409)
+    return make_response(exercise_schema.dump(exercise), 201)
 
 @app.route('/exercises/<int:id>', methods=['DELETE'])
 def delete_exercise(id):
-    return make_response({'message': f'Delete exercise {id}'}, 200)
+    exercise = db.session.get(Exercise, id)
+    if not exercise:
+        return make_response({'error': 'Exercise not found'}, 404)
+    db.session.delete(exercise)  # cascade also deletes its WorkoutExercises
+    db.session.commit()
+    return make_response('', 204)
 
 
 # ---------- WORKOUT EXERCISE ROUTES ----------
@@ -63,9 +108,24 @@ def delete_exercise(id):
     methods=['POST']
 )
 def add_exercise_to_workout(workout_id, exercise_id):
-    return make_response(
-        {'message': f'Add exercise {exercise_id} to workout {workout_id}'}, 200
-    )
+    workout = db.session.get(Workout, workout_id)
+    if not workout:
+        return make_response({'error': 'Workout not found'}, 404)
+    exercise = db.session.get(Exercise, exercise_id)
+    if not exercise:
+        return make_response({'error': 'Exercise not found'}, 404)
+
+    try:
+        data = workout_exercise_schema.load(request.get_json())
+        workout_exercise = WorkoutExercise(workout=workout, exercise=exercise, **data)
+        db.session.add(workout_exercise)
+        db.session.commit()
+    except ValidationError as e:     # schema validations (Marshmallow)
+        return make_response({'error': e.messages}, 400)
+    except IntegrityError:           # table constraints (check constraints)
+        db.session.rollback()
+        return make_response({'error': 'Invalid workout exercise data.'}, 400)
+    return make_response(workout_exercise_schema.dump(workout_exercise), 201)
 
 
 if __name__ == '__main__':
