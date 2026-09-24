@@ -52,7 +52,12 @@ def create_workout():
 
 @app.route('/workouts/<int:id>', methods=['DELETE'])
 def delete_workout(id):
-    return make_response({'message': f'Delete workout {id}'}, 200)
+    workout = db.session.get(Workout, id)
+    if not workout:
+        return make_response({'error': 'Workout not found'}, 404)
+    db.session.delete(workout)  # cascade also deletes its WorkoutExercises
+    db.session.commit()
+    return make_response('', 204)
 
 
 # ---------- EXERCISE ROUTES ----------
