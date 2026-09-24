@@ -39,7 +39,16 @@ def get_workout(id):
 
 @app.route('/workouts', methods=['POST'])
 def create_workout():
-    return make_response({'message': 'Create a workout'}, 200)
+    try:
+        data = workout_schema.load(request.get_json())
+        workout = Workout(**data)
+        db.session.add(workout)
+        db.session.commit()
+    except ValidationError as e:     # schema validations (Marshmallow)
+        return make_response({'error': e.messages}, 400)
+    except ValueError as e:          # model validations (@validates)
+        return make_response({'error': str(e)}, 400)
+    return make_response(workout_schema.dump(workout), 201)
 
 @app.route('/workouts/<int:id>', methods=['DELETE'])
 def delete_workout(id):
