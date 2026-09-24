@@ -1,3 +1,5 @@
+"""Tests for model validations and API endpoint status codes."""
+
 import os
 os.environ['DATABASE_URI'] = 'sqlite:///:memory:'  # must be set before importing app
 

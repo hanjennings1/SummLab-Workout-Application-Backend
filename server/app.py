@@ -1,11 +1,14 @@
+"""Flask API for tracking workouts and the exercises within them."""
+
 import os
+
 from flask import Flask, make_response, request
 from flask_migrate import Migrate
 from marshmallow import ValidationError
+from sqlalchemy.exc import IntegrityError
 
 from models import db, Exercise, Workout, WorkoutExercise
 from schemas import ExerciseSchema, WorkoutSchema, WorkoutExerciseSchema
-from sqlalchemy.exc import IntegrityError
 
 
 app = Flask(__name__)
@@ -32,12 +35,14 @@ def get_workouts():
     workouts = Workout.query.all()
     return make_response(workouts_schema.dump(workouts), 200)
 
+
 @app.route('/workouts/<int:id>', methods=['GET'])
 def get_workout(id):
     workout = db.session.get(Workout, id)
     if not workout:
         return make_response({'error': 'Workout not found'}, 404)
     return make_response(workout_schema.dump(workout), 200)
+
 
 @app.route('/workouts', methods=['POST'])
 def create_workout():
@@ -51,6 +56,7 @@ def create_workout():
     except ValueError as e:          # model validations (@validates)
         return make_response({'error': str(e)}, 400)
     return make_response(workout_schema.dump(workout), 201)
+
 
 @app.route('/workouts/<int:id>', methods=['DELETE'])
 def delete_workout(id):
@@ -69,12 +75,14 @@ def get_exercises():
     exercises = Exercise.query.all()
     return make_response(exercises_schema.dump(exercises), 200)
 
+
 @app.route('/exercises/<int:id>', methods=['GET'])
 def get_exercise(id):
     exercise = db.session.get(Exercise, id)
     if not exercise:
         return make_response({'error': 'Exercise not found'}, 404)
     return make_response(exercise_schema.dump(exercise), 200)
+
 
 @app.route('/exercises', methods=['POST'])
 def create_exercise():
@@ -91,6 +99,7 @@ def create_exercise():
         db.session.rollback()
         return make_response({'error': 'An exercise with that name already exists.'}, 409)
     return make_response(exercise_schema.dump(exercise), 201)
+
 
 @app.route('/exercises/<int:id>', methods=['DELETE'])
 def delete_exercise(id):

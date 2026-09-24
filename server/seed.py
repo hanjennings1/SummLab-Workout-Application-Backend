@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Resets the database and seeds it with example exercises, workouts, and links."""
 
 from datetime import date
 
