@@ -8,9 +8,9 @@ class Exercise(db.Model):
     __tablename__ = 'exercises'  # table name used by foreign keys
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)                 # e.g., "Push-up"
-    category = db.Column(db.String)             # e.g., "strength", "cardio"
-    equipment_needed = db.Column(db.Boolean)    # True if equipment is required
+    name = db.Column(db.String, nullable=False, unique=True)    # required field; no duplicates
+    category = db.Column(db.String)                 # e.g., "strength", "cardio"
+    equipment_needed = db.Column(db.Boolean)        # True if equipment is required
 
     # An exercise has many WorkoutExercises; deleting an exercise deletes its links:
     workout_exercises = db.relationship(
@@ -29,7 +29,7 @@ class Workout(db.Model):
     __tablename__ = 'workouts'
 
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date)                  # expects a Python date object, not a string
+    date = db.Column(db.Date, nullable=False)  # required; expects a Python date object, not a string
     duration_minutes = db.Column(db.Integer)   # total workout length
     notes = db.Column(db.Text)                 # Text allows longer, free-form content
 
@@ -49,10 +49,17 @@ class Workout(db.Model):
 class WorkoutExercise(db.Model):
     __tablename__ = 'workout_exercises'
 
+    # Database-level rules: values must be positive when provided
+    __table_args__ = (
+        db.CheckConstraint('reps > 0', name='ck_reps_positive'),
+        db.CheckConstraint('sets > 0', name='ck_sets_positive'),
+        db.CheckConstraint('duration_seconds > 0', name='ck_duration_positive'),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     # Foreign keys reference table names ('workouts'), not class names:
-    workout_id = db.Column(db.Integer, db.ForeignKey('workouts.id'))
-    exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'))
+    workout_id = db.Column(db.Integer, db.ForeignKey('workouts.id'), nullable=False)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False)
     reps = db.Column(db.Integer)               # per set; empty for timed exercises
     sets = db.Column(db.Integer)
     duration_seconds = db.Column(db.Integer)   # for timed exercises (e.g., plank)
