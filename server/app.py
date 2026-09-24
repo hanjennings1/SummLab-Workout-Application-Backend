@@ -64,7 +64,8 @@ def delete_workout(id):
 
 @app.route('/exercises', methods=['GET'])
 def get_exercises():
-    return make_response({'message': 'List all exercises'}, 200)
+    exercises = Exercise.query.all()
+    return make_response(exercises_schema.dump(exercises), 200)
 
 @app.route('/exercises/<int:id>', methods=['GET'])
 def get_exercise(id):
