@@ -209,4 +209,5 @@ server/
 - **Exercise name uniqueness is case-sensitive.** Surrounding spaces are trimmed, but "Push-up" and "push-up" count as different names.
 - **Categories are fixed in code.** Adding a category means editing `Exercise.CATEGORIES` in `models.py`.
 - **No authentication or pagination.** Any client can create or delete records, and list endpoints return every record at once.
+- **Malformed JSON returns an HTML error.** If a POST request body isn't valid JSON, Flask returns its default HTML "400 Bad Request" page instead of the API's JSON `error` format. The status code is still correct, but clients expecting JSON won't be able to parse the response.
 - **Development setup only.** The app uses SQLite and runs with debug mode on, which suits local development but not production.
