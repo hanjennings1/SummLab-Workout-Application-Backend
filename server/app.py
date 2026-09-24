@@ -4,6 +4,7 @@ from marshmallow import ValidationError
 
 from models import db, Exercise, Workout, WorkoutExercise
 from schemas import ExerciseSchema, WorkoutSchema, WorkoutExerciseSchema
+from sqlalchemy.exc import IntegrityError
 
 
 app = Flask(__name__)
@@ -76,7 +77,19 @@ def get_exercise(id):
 
 @app.route('/exercises', methods=['POST'])
 def create_exercise():
-    return make_response({'message': 'Create an exercise'}, 200)
+    try:
+        data = exercise_schema.load(request.get_json())
+        exercise = Exercise(**data)
+        db.session.add(exercise)
+        db.session.commit()
+    except ValidationError as e:     # schema validations (Marshmallow)
+        return make_response({'error': e.messages}, 400)
+    except ValueError as e:          # model validations (@validates)
+        return make_response({'error': str(e)}, 400)
+    except IntegrityError:           # table constraints (duplicate name)
+        db.session.rollback()
+        return make_response({'error': 'An exercise with that name already exists.'}, 409)
+    return make_response(exercise_schema.dump(exercise), 201)
 
 @app.route('/exercises/<int:id>', methods=['DELETE'])
 def delete_exercise(id):
