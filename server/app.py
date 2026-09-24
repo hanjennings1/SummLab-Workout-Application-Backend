@@ -108,9 +108,24 @@ def delete_exercise(id):
     methods=['POST']
 )
 def add_exercise_to_workout(workout_id, exercise_id):
-    return make_response(
-        {'message': f'Add exercise {exercise_id} to workout {workout_id}'}, 200
-    )
+    workout = db.session.get(Workout, workout_id)
+    if not workout:
+        return make_response({'error': 'Workout not found'}, 404)
+    exercise = db.session.get(Exercise, exercise_id)
+    if not exercise:
+        return make_response({'error': 'Exercise not found'}, 404)
+
+    try:
+        data = workout_exercise_schema.load(request.get_json())
+        workout_exercise = WorkoutExercise(workout=workout, exercise=exercise, **data)
+        db.session.add(workout_exercise)
+        db.session.commit()
+    except ValidationError as e:     # schema validations (Marshmallow)
+        return make_response({'error': e.messages}, 400)
+    except IntegrityError:           # table constraints (check constraints)
+        db.session.rollback()
+        return make_response({'error': 'Invalid workout exercise data.'}, 400)
+    return make_response(workout_exercise_schema.dump(workout_exercise), 201)
 
 
 if __name__ == '__main__':
