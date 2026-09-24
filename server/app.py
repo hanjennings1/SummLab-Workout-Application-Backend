@@ -1,7 +1,10 @@
-from flask import Flask, make_response
+from flask import Flask, make_response, request
 from flask_migrate import Migrate
+from marshmallow import ValidationError
 
-from models import *
+from models import db, Exercise, Workout, WorkoutExercise
+from schemas import ExerciseSchema, WorkoutSchema, WorkoutExerciseSchema
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
@@ -12,11 +15,20 @@ migrate = Migrate(app, db)
 db.init_app(app)
 
 
+# Schema instances: single-record views include nested data; lists stay concise
+workout_schema = WorkoutSchema()
+workouts_schema = WorkoutSchema(many=True, exclude=('workout_exercises',))
+exercise_schema = ExerciseSchema()
+exercises_schema = ExerciseSchema(many=True, exclude=('workouts',))
+workout_exercise_schema = WorkoutExerciseSchema()
+
+
 # ---------- WORKOUT ROUTES ----------
 
 @app.route('/workouts', methods=['GET'])
 def get_workouts():
-    return make_response({'message': 'List all workouts'}, 200)
+    workouts = Workout.query.all()
+    return make_response(workouts_schema.dump(workouts), 200)
 
 
 @app.route('/workouts/<int:id>', methods=['GET'])
