@@ -3,9 +3,10 @@ from sqlalchemy.orm import validates
 from sqlalchemy.ext.associationproxy import association_proxy
 db = SQLAlchemy()
 
-# EXERCISE MODEL
+# ======= EXERCISE MODEL =======
 class Exercise(db.Model):
     __tablename__ = 'exercises'  # table name used by foreign keys
+    CATEGORIES = ('strength', 'cardio', 'flexibility', 'balance')  # allowed category values
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False, unique=True)    # required field; no duplicates
@@ -19,12 +20,31 @@ class Exercise(db.Model):
     # An exercise has many workouts through WorkoutExercises:
     workouts = association_proxy('workout_exercises', 'workout')
 
+    # VALIDATIONS--
+    # name validation
+    @validates('name')
+    def validate_name(self, key, value):
+        # Reject empty or whitespace-only names (nullable=False still allows "")
+        if not value or not value.strip():
+            raise ValueError('Exercise name cannot be blank.')
+        return value.strip()
+    
+    # category validation
+    @validates('category')
+    def validate_category(self, key, value):
+        # Normalize case so "Strength" and "strength" are treated the same
+        normalized = value.strip().lower() if value else value
+        if normalized not in self.CATEGORIES:
+            raise ValueError(f"Category must be one of: {', '.join(self.CATEGORIES)}.")
+        return normalized
+
     def __repr__(self):
         # Readable output when printing or debugging
         return f'<Exercise {self.id}: {self.name} ({self.category})>'
 
 
-# WORKOUT MODEL
+
+# ======= WORKOUT MODEL =======
 class Workout(db.Model):
     __tablename__ = 'workouts'
 
@@ -40,6 +60,15 @@ class Workout(db.Model):
     # A workout has many exercises through WorkoutExercises:
     exercises = association_proxy('workout_exercises', 'exercise')
 
+    # VALIDATIONS--
+    # duration in minutes
+    @validates('duration_minutes')
+    def validate_duration_minutes(self, key, value):
+        # A workout must last a positive number of minutes
+        if value is None or value <= 0:
+            raise ValueError('Duration must be a positive number of minutes.')
+        return value
+    
     def __repr__(self):
         # Readable output when printing or debugging
         return f'<Workout {self.id}: {self.date} ({self.duration_minutes} min)>'
