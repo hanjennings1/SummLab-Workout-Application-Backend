@@ -1,3 +1,5 @@
+"""Marshmallow schemas for serialization, deserialization, and schema validations."""
+
 from marshmallow import Schema, fields, validate, validates_schema, ValidationError
 
 
