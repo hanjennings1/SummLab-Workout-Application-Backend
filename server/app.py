@@ -30,16 +30,16 @@ def get_workouts():
     workouts = Workout.query.all()
     return make_response(workouts_schema.dump(workouts), 200)
 
-
 @app.route('/workouts/<int:id>', methods=['GET'])
 def get_workout(id):
-    return make_response({'message': f'Show workout {id} with its exercises'}, 200)
-
+    workout = db.session.get(Workout, id)
+    if not workout:
+        return make_response({'error': 'Workout not found'}, 404)
+    return make_response(workout_schema.dump(workout), 200)
 
 @app.route('/workouts', methods=['POST'])
 def create_workout():
     return make_response({'message': 'Create a workout'}, 200)
-
 
 @app.route('/workouts/<int:id>', methods=['DELETE'])
 def delete_workout(id):
@@ -52,16 +52,13 @@ def delete_workout(id):
 def get_exercises():
     return make_response({'message': 'List all exercises'}, 200)
 
-
 @app.route('/exercises/<int:id>', methods=['GET'])
 def get_exercise(id):
     return make_response({'message': f'Show exercise {id} with its workouts'}, 200)
 
-
 @app.route('/exercises', methods=['POST'])
 def create_exercise():
     return make_response({'message': 'Create an exercise'}, 200)
-
 
 @app.route('/exercises/<int:id>', methods=['DELETE'])
 def delete_exercise(id):
