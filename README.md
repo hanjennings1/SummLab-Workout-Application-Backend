@@ -8,7 +8,7 @@ Built with Flask, Flask-SQLAlchemy, Flask-Migrate, and Marshmallow, with validat
 
 ## Installation
 
-Requires Python 3.8.13+ and Pipenv.
+Requires Python 3.12 and Pipenv.
 
 1. Clone the repository and move into it:
 

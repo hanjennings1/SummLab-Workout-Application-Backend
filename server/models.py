@@ -3,8 +3,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import validates
 from sqlalchemy.ext.associationproxy import association_proxy
-db = SQLAlchemy()
 
+db = SQLAlchemy()
 
 
 # ======= EXERCISE MODEL =======
@@ -47,7 +47,6 @@ class Exercise(db.Model):
         return f'<Exercise {self.id}: {self.name} ({self.category})>'
 
 
-
 # ======= WORKOUT MODEL =======
 class Workout(db.Model):
     __tablename__ = 'workouts'
@@ -76,7 +75,6 @@ class Workout(db.Model):
     def __repr__(self):
         # Readable output when printing or debugging
         return f'<Workout {self.id}: {self.date} ({self.duration_minutes} min)>'
-
 
 
 # ======= WORKOUT-EXERCISES MODEL (JOIN TABLE) =======
