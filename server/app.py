@@ -69,7 +69,10 @@ def get_exercises():
 
 @app.route('/exercises/<int:id>', methods=['GET'])
 def get_exercise(id):
-    return make_response({'message': f'Show exercise {id} with its workouts'}, 200)
+    exercise = db.session.get(Exercise, id)
+    if not exercise:
+        return make_response({'error': 'Exercise not found'}, 404)
+    return make_response(exercise_schema.dump(exercise), 200)
 
 @app.route('/exercises', methods=['POST'])
 def create_exercise():
