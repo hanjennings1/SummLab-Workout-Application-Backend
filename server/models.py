@@ -3,6 +3,8 @@ from sqlalchemy.orm import validates
 from sqlalchemy.ext.associationproxy import association_proxy
 db = SQLAlchemy()
 
+
+
 # ======= EXERCISE MODEL =======
 class Exercise(db.Model):
     __tablename__ = 'exercises'  # table name used by foreign keys
@@ -74,7 +76,8 @@ class Workout(db.Model):
         return f'<Workout {self.id}: {self.date} ({self.duration_minutes} min)>'
 
 
-# WORKOUT-EXERCISES MODEL (JOIN TABLE)
+
+# ======= WORKOUT-EXERCISES MODEL (JOIN TABLE) =======
 class WorkoutExercise(db.Model):
     __tablename__ = 'workout_exercises'
 
